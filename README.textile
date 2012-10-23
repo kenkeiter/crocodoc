@@ -1,0 +1,47 @@
+h1. Crocodoc
+
+A complete Ruby interface to the fantastic "Crocodoc":http://crocodoc.com/ document embedding/conversion service.
+
+h2. Design/Features
+
+There is another Ruby interface to Crocodoc, "crocodoc-ruby":https://github.com/instructure/crocodoc-ruby, and it's only partially functional. Its implementation does not offer a proper object-oriented interface, and only supports basic Net::HTTP requests. 
+
+With this gem, I aim to provide the following functionality:
+
+* A document-oriented interface. You perform operations on Document objects, which are serializable for easier database integration.
+* A set of helpers for generation of viewing sessions.
+* Use of Faraday, allowing you to use whichever HTTP backend best suits your purposes.
+* Webhook helpers
+* System monitoring checks
+
+h2. Installation
+
+Add this line to your application's Gemfile:
+
+<code>
+  gem 'crocodoc'
+</code>
+
+And then execute:
+
+<code>
+  $ bundle
+</code>
+
+Or install it yourself as:
+
+<code>
+  $ gem install crocodoc
+</code>
+
+h2. Usage
+
+See the @examples@ directory for examples.
+
+h2. Contributing
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Added some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new Pull Request
