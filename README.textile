@@ -9,7 +9,7 @@ There is another Ruby interface to Crocodoc, "crocodoc-ruby":https://github.com/
 With this gem, I aim to provide the following functionality:
 
 * A document-oriented interface. You perform operations on Document objects, which are serializable for easier database integration.
-* A set of helpers for generation of viewing sessions.
+* A helper for generation of viewing sessions.
 * Use of Faraday, allowing you to use whichever HTTP backend best suits your purposes.
 * Webhook helpers
 * System monitoring checks

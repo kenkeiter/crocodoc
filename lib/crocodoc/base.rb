@@ -10,10 +10,12 @@ module Crocodoc
   # :nodoc:
   class Error < StandardError; end
 
+  # Get the path to the SSL CA cert file
   def self.ssl_ca_cert_path
     @ssl_ca_cert_path ||= File.join(File.dirname(__FILE__), 'certs/ca-bundle.crt')
   end
 
+  # Set the path to the SSL CA cert file that will be used.
   def self.ssl_ca_cert_path=(path)
     raise Error, "No SSL CA cert file at #{path}" unless File.exist?(path)
     @ssl_ca_cert_path = path
@@ -46,17 +48,55 @@ module Crocodoc
     return @api_token
   end
 
+  # Set the Faraday connection adapter to use (along with any arguments) for 
+  # the transaction.
   def self.connection_adapter=(args)
     @connection_adapter = args
     @connection = nil # invalidate the current Faraday instance
   end
 
+  # Change the debugging status. Should be set to true or false.
   def self.debug=(debug)
     @debug = debug
   end
 
+  # Check if debugging is enabled.
   def self.debug?
-    @debug || false
+    !!@debug || false
+  end
+
+  # The +APIError+ exception is raised whenever an error occurs on the 
+  # server side.
+  class APIError < StandardError; end
+
+  # The +APIRequestError+ exception is raised whenever a faulty request is 
+  # made to the server.
+  class APIRequestError < StandardError; end
+
+  # The +InvalidTokenError+ exception is raised when the server denies access 
+  # to the API because the token is invalid.
+  class InvalidTokenError < StandardError; end
+
+  # Get a reference to the current Faraday connection object.
+  def self.connection
+    unless @connection
+      @connection ||= Faraday.new(base_url, :ssl => {:ca_file => ssl_ca_cert_path}) do |conn|
+        conn.request :include_token, self.api_token
+        conn.request :multipart
+        conn.request :url_encoded
+
+        conn.response :crocodoc_response
+        conn.response :json, :content_type => /\bjson$/
+        conn.response :logger if debug?
+        
+        if @connection_adapter
+          conn.adapter *@connection_adapter
+        else
+          conn.adapter :net_http
+        end
+      end
+    end
+    return @connection
   end
 
 end

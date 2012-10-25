@@ -10,10 +10,7 @@ module Crocodoc
   #   while !document.viewable?
   #     sleep 10
   #   end
-  #   session = document.create_viewing_session do |sess|
-  #     sess.for_user user.id, user.username
-  #     sess.allow_editing true
-  #   end
+  #   session = document.viewing_session.activate_for_user(1000, "kenkeiter")
   #   viewing_url = document.get_viewing_url(session)
   #
   class Document
@@ -41,16 +38,14 @@ module Crocodoc
 
     # Given an absolute filesystem +path+ to a document of a valid type, with 
     # the proper file extension, upload the document to Crocodoc, and return a 
-    # new representative +Document+ instance. Optionally accepts a hash of 
-    # options which will be merged with the Faraday request +:options+ 
-    # parameter.
+    # new representative +Document+ instance. 
     #
     # = Example
     #
     #   d = Document.upload_file('/my/file/path.docx') # => <Document instance>
     #   d.uuid # => 'E88A2EFB-0E61-4DBB-94C7-E30E5AAF13F4'
     #
-    def self.upload_file(path, opts = {})
+    def self.upload_file(path)
       unless File.exist?(path)
         raise ArgumentError, "File does not exist at path: #{path}"
       end
@@ -62,11 +57,9 @@ module Crocodoc
     end
 
     # Given a +url+ of a valid file, have Crocodoc fetch the document, convert, 
-    # and store it. Returns a representative +Document+ instance. Optionally 
-    # accepts a hash of options which will be merged with the Faraday request 
-    # +:options+ parameter.
-    def self.upload_url(url, opts = {})
-      response = Crocodoc.connection.post 'document/upload', {:url => url}
+    # and store it. Returns a representative +Document+ instance. 
+    def self.upload_url(url)
+      response = Crocodoc.connection.post 'document/upload', :url => url
       raise APIRequestError, response.body[:error] if response.body[:error]
       return new(response.body['uuid'])
     end
@@ -85,9 +78,8 @@ module Crocodoc
     # memoized for +Document.status_update_threshold+ seconds during which 
     # successive calls to +Document#status+ will provide the same response; 
     # however, memoization can be ignored (forcing a new HTTP request) if 
-    # the +memoized+ arg is +false+. Optionally accepts a hash of options 
-    # which will be merged with the Faraday request +:options+ parameter.
-    def status(memoize = true, opts = {})
+    # the +memoized+ arg is +false+. 
+    def status(memoize = true)
       if @status[:updated].nil? or not memoize or (memoize and not @status[:updated].nil? and 
         ((Time.now - @status[:updated]) >= self.class.status_update_threshold))
         response = Crocodoc.connection.get 'document/status', :uuids => @uuid
@@ -132,10 +124,9 @@ module Crocodoc
 
     # Given a writable destination path (+dest_path+), and optional +max_x+ and 
     # +max_y+ dimensions, download a thumbnail image of the doucment. Note that 
-    # +max_x+ and +max_y+ cannot be more than 300 pixels each. Optionally 
-    # accepts a hash of options which will be merged with the Faraday request 
-    # +:options+ parameter.
-    def download_thumbnail(dest_path, max_x = 100, max_y = 100, opts = {})
+    # +max_x+ and +max_y+ cannot be more than 300 pixels each. The downloaded 
+    # thumbnail will be a PNG image.
+    def download_thumbnail(dest_path, max_x = 100, max_y = 100)
       response = Crocodoc.connection.get 'download/thumbnail',
         :uuid => @uuid,
         :size => "#{max_x}x#{max_y}"
@@ -144,7 +135,7 @@ module Crocodoc
 
     # Given a writable destination path (+dest_path+), download a copy of the 
     # original document, in its original format, without annotations.
-    def download(dest_path, opts = {})
+    def download(dest_path)
       response = Crocodoc.connection.get 'download/document',
         :pdf => false,
         :annotated => false,
@@ -155,10 +146,8 @@ module Crocodoc
     # Given a writable destination path (+dest_path+) download a PDF version of 
     # the document. Optionally, an +annotations+ parameter can be provided 
     # whose values can be 'all', 'none', or an array of user IDs for which 
-    # annotations will be included in the exported PDF. Additionally, this 
-    # method optionally accepts a hash of options which will be merged with the 
-    # Faraday request +:options+ parameter.
-    def download_as_pdf(dest_path, annotations = false, opts = {})
+    # annotations will be included in the exported PDF.
+    def download_as_pdf(dest_path, annotations = false)
       annotations = annotations.join(',') if annotations.kind_of?(Enumerable)
       response = Crocodoc.connection.get 'download/document',
         :pdf => true,
@@ -170,25 +159,14 @@ module Crocodoc
 
     # If your account supports text extraction, retrieve the extracted text 
     # from the document. Extracted text will automatically be split by page and 
-    # returned as an array. Optionally accepts a hash of options which will be 
-    # merged with the Faraday request +:options+ parameter.
-    def extracted_text(opts = {})
+    # returned as an array. 
+    def extracted_text
       response = Crocodoc.connection.get 'download/text', :uuid => @uuid
       return response.body.split("\f")
     end
 
     # Create a new +ViewingSession+ instance for this document. See 
     # +ViewingSession+ documentation for more details.
-    #
-    # = Example
-    # 
-    #   session = document.create_viewing_session do |sess|
-    #     sess.for_user 1000, "Ken Keiter"
-    #     sess.allow_editing true
-    #     sess.visible_annotations :all
-    #     sess.admin true
-    #     sess.allow_download true
-    #   end
     def viewing_session(opts = {})
       Crocodoc::DocumentViewingSession.new(self, opts)
     end

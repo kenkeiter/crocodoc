@@ -1,6 +1,7 @@
 module Crocodoc
   module Middleware
 
+    # :nodoc:
     class IncludeToken < ::Faraday::Middleware
 
       def initialize(app, token)
@@ -13,6 +14,7 @@ module Crocodoc
           env[:body] ||= {}
           env[:body] = env[:body].merge(:token => @token)
         else
+          # FARADAY Y U NO LEAVE MY QUERY PARAMS ALONE?!!
           query = env[:url].query.nil? ? {} : Faraday::Utils.parse_query(env[:url].query)
           env[:url].query = Faraday::Utils.build_query(query.merge(:token => @token))
         end
@@ -21,6 +23,7 @@ module Crocodoc
 
     end
 
+    # :nodoc:
     class CrocodocResponse < ::Faraday::Response::Middleware
 
       def call(env)
@@ -44,8 +47,11 @@ module Crocodoc
 
   end
 
+  # Register middlewarez
+
   Faraday.register_middleware :request,
     :include_token => lambda{ Middleware::IncludeToken }
+
   Faraday.register_middleware :response,
     :crocodoc_response => lambda{ Middleware::CrocodocResponse }
 
